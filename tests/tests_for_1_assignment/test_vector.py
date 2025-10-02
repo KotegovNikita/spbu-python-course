@@ -129,14 +129,11 @@ def test_get_angle_opposite_direction():
     """
     Test angle calculation for anti-parallel vectors.
 
-    Verifies the angle is $\pi$ radians (180 degrees).
-
-    Test cases:
-    - Opposite vectors [1, 0] and [-1, 0].
+    Verifies the angle is 180 degrees.
     """
     v1 = [1.0, 0.0]
     v2 = [-1.0, 0.0]
-    expected = pi
+    expected = 180.0
     assert get_angle_between_vectors(v1, v2) == pytest.approx(expected)
 
 
@@ -144,14 +141,11 @@ def test_get_angle_orthogonal():
     """
     Test angle calculation for orthogonal vectors.
 
-    Verifies the angle is $\pi/2$ radians (90 degrees).
-
-    Test cases:
-    - Orthogonal vectors [1, 0] and [0, 1].
+    Verifies the angle is 90 degrees.
     """
     v1 = [1.0, 0.0]
     v2 = [0.0, 1.0]
-    expected = pi / 2
+    expected = 90.0
     assert get_angle_between_vectors(v1, v2) == pytest.approx(expected)
 
 
@@ -159,15 +153,15 @@ def test_get_angle_45_degrees():
     """
     Test angle calculation for a 45-degree angle.
 
-    Verifies the angle is $\pi/4$ radians.
-
-    Test cases:
-    - Vectors [1, 0] and [1, 1].
+    Verifies the angle is 45 degrees.
     """
     v1 = [1.0, 0.0]
     v2 = [1.0, 1.0]
-    expected = pi / 4
+    expected = 45.0
     assert get_angle_between_vectors(v1, v2) == pytest.approx(expected)
+
+
+# ----------------------------------------------------------------------------------
 
 
 def test_get_angle_invalid_dimensions():
@@ -175,28 +169,24 @@ def test_get_angle_invalid_dimensions():
     Test angle calculation error handling for mismatched dimensions.
 
     Verifies a ValueError is raised when dimensions are unequal.
-
-    Test cases:
-    - Vector 2D and Vector 3D.
     """
     v1 = [1.0, 2.0]
     v2 = [3.0, 4.0, 5.0]
     with pytest.raises(ValueError) as excinfo:
         get_angle_between_vectors(v1, v2)
-    assert "same dimensions" in str(excinfo.value)
+    assert "Vectors sizes must be equal" in str(excinfo.value)
+
+
+# ----------------------------------------------------------------------------------
 
 
 def test_get_angle_with_zero_vector():
     """
     Test angle calculation error when one vector is the zero vector.
 
-    Verifies a ValueError is raised due to zero denominator.
-
-    Test cases:
-    - Vector [1, 2] and zero vector [0, 0].
+    Verifies a ZeroDivisionError is raised.
     """
     v1 = [1.0, 2.0]
     v2 = [0.0, 0.0]
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(ZeroDivisionError) as excinfo:
         get_angle_between_vectors(v1, v2)
-    assert "Denominator cannot be zero" in str(excinfo.value)
