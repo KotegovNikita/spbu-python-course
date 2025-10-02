@@ -4,7 +4,7 @@ from typing import List, Optional
 
 def scalar_multiplication_of_vectors(
     vector1: List[float], vector2: List[float]
-) -> Optional[float]:
+) -> float:
     """
     Calculate scalar product of two vectors
 
@@ -20,7 +20,7 @@ def scalar_multiplication_of_vectors(
     raise ValueError("Vectors must have same dimensions")
 
 
-def find_length_of_vectors(vector1: List[float]) -> Optional[float]:
+def find_length_of_vectors(vector1: List[float]) -> float:
     """
     Calculate length of a vector
 
@@ -33,9 +33,7 @@ def find_length_of_vectors(vector1: List[float]) -> Optional[float]:
     return sum([vector1[i] ** 2 for i in range(len(vector1))]) ** 0.5
 
 
-def get_angle_between_vectors(
-    vector1: List[float], vector2: List[float]
-) -> Optional[float]:
+def get_angle_between_vectors(vector1: List[float], vector2: List[float]) -> float:
     """
     Calculate angle between two vectors
 
