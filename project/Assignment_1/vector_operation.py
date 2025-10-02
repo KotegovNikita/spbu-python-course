@@ -1,4 +1,4 @@
-from math import acos
+from math import acos, pi
 from typing import List, Optional
 
 
@@ -46,15 +46,14 @@ def get_angle_between_vectors(
     Returns:
         Optional[float]: Angle between vectors in radians
     """
-    if len(vector1) == len(vector2):
-        scalar = scalar_multiplication_of_vectors(vector1, vector2)
-        length1 = find_length_of_vectors(vector1)
-        length2 = find_length_of_vectors(vector2)
+    if len(vector1) != len(vector2):
+        raise ValueError("Vectors sizes must be equal")
 
-        denominator = length1 * length2
-        if denominator == 0:
-            raise ValueError("Denominator cannot be zero")
-
-        cos_angle = scalar / denominator
-        return acos(cos_angle)
-    raise ValueError("Vectors must have same dimensions")
+    return (
+        180
+        * acos(
+            scalar_multiplication_of_vectors(vector1, vector2)
+            / (find_length_of_vectors(vector1) * find_length_of_vectors(vector2))
+        )
+        / pi
+    )
