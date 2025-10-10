@@ -1,78 +1,52 @@
 from functools import reduce
 from typing import Callable, Iterable, Generator, Any, Sequence
+import random
 
 
-def generate_data(new_data: Iterable[Any]) -> Generator:
-    """Creates a generator from an iterable.
-
-    This function takes any iterable object and yields its elements one by one,
-    effectively turning it into a generator stream.
+def generate_data(count: int, min_val: int, max_val: int) -> Generator[int, None, None]:
+    """
+    Генерирует ограниченное количество случайных целых чисел в заданном диапазоне.
 
     Args:
-        new_data (Iterable[Any]): An iterable object (e.g., a list, tuple)
-            to be used as the data source.
+        count (int): Количество случайных чисел для генерации.
+        min_val (int): Минимальное возможное значение (включительно).
+        max_val (int): Максимальное возможное значение (включительно).
 
     Yields:
-        Generator: An element from the source iterable.
+        Generator[int, None, None]: Случайное целое число в указанном диапазоне.
     """
-    for i in new_data:
-        yield i
+    for _ in range(count):
+        yield random.randint(min_val, max_val)
 
 
-def pipeline(source_data: Iterable[Any], *operations: Callable) -> Generator:
-    """Applies a sequence of operations to a data stream in a lazy manner.
+def pipeline(source_data: Iterable[Any], *operations: Callable | tuple) -> Generator:
+    """
+    Применяет последовательность операций к потоку данных.
 
-    This function chains together multiple processing functions (operations).
-    Each operation is applied to the output of the previous one. The processing
-    is lazy, meaning computations are only performed when an element is
-    requested from the final generator.
+    Операции могут быть двух видов:
+    1.  Простая функция (Callable), которая принимает и возвращает итератор.
+    2.  Кортеж (tuple), где первый элемент - функция (map, filter),
+        а последующие - её "замороженные" аргументы. Поток данных
+        будет подставлен последним аргументом.
 
     Args:
-        source_data (Iterable[Any]): The initial data stream, which can be any
-            iterable (e.g., a list or another generator).
-        *operations (Callable): A variable number of functions to be applied
-            sequentially. Each function must accept an iterable as input and
-            return an iterable.
+        source_data (Iterable[Any]): Исходный поток данных.
+        *operations (Callable | tuple): Последовательность операций.
 
     Returns:
-        Generator: A generator that will yield the processed data when iterated over.
+        Generator: Генератор с обработанными данными.
     """
     stream = source_data
     for op in operations:
-        stream = op(stream)
+        if isinstance(op, tuple):
+            op_func, *op_args = op
+            stream = op_func(*op_args, stream)
+        elif callable(op):
+            stream = op(stream)
+        else:
+            raise TypeError(f"Unsupported operation type: {type(op)}")
+
     yield from stream
-
-
-def square(numbers: Iterable[int]) -> Generator:
-    """Yields the square of each number from an iterable.
-
-    This is a generator function that takes an iterable of numbers and yields
-    the square of each number one by one.
-
-    Args:
-        numbers (Iterable[int]): An iterable of integers.
-
-    Yields:
-        Generator: The square of the next number in the sequence.
-    """
-    for num in numbers:
-        yield num * num
-
-
-def add_one(numbers: Iterable[int]) -> Generator:
-    """Yields each number from an iterable incremented by one.
-
-    This is a generator function that takes an iterable of numbers and yields
-    each number plus one.
-
-    Args:
-        numbers (Iterable[int]): An iterable of integers.
-
-    Yields:
-        Generator: The next number in the sequence incremented by one.
-    """
-    for num in numbers:
-        yield num + 1
 
 
 def aggregator(source_data: Iterable[Any], output_type: Callable = list) -> Sequence:
