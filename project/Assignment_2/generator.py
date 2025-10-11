@@ -5,64 +5,96 @@ import random
 
 def generate_data(count: int, min_val: int, max_val: int) -> Generator[int, None, None]:
     """
-    Генерирует ограниченное количество случайных целых чисел в заданном диапазоне.
-
+    Generate a limited number of random integers within a specified range.
     Args:
-        count (int): Количество случайных чисел для генерации.
-        min_val (int): Минимальное возможное значение (включительно).
-        max_val (int): Максимальное возможное значение (включительно).
-
+        count (int): Number of random integers to generate.
+        min_val (int): Minimum possible value (inclusive).
+        max_val (int): Maximum possible value (inclusive).
     Yields:
-        Generator[int, None, None]: Случайное целое число в указанном диапазоне.
+        int: Random integers within the specified range, one at a time.
     """
     for _ in range(count):
         yield random.randint(min_val, max_val)
 
 
-def pipeline(source_data: Iterable[Any], *operations: Callable | tuple) -> Generator:
+def create_op_adapter(
+    func: Callable, *args: Any, **kwargs: Any
+) -> Callable[[Iterable[Any]], Generator[Any, None, None]]:
     """
-    Применяет последовательность операций к потоку данных.
-
-    Операции могут быть двух видов:
-    1.  Простая функция (Callable), которая принимает и возвращает итератор.
-    2.  Кортеж (tuple), где первый элемент - функция (map, filter),
-        а последующие - её "замороженные" аргументы. Поток данных
-        будет подставлен последним аргументом.
-
+    This adapter standardizes the application of functions such as map, filter,
+    zip, enumerate, reduce, or any custom function
     Args:
-        source_data (Iterable[Any]): Исходный поток данных.
-        *operations (Callable | tuple): Последовательность операций.
-
+        func (Callable): The function to adapt
+        *args Positional arguments for the `func`.
+        **kwargs Keyword arguments for the `func`.
     Returns:
-        Generator: Генератор с обработанными данными.
+        Callable[[Iterable[Any]], Generator[Any, None, None]]:
+        A function that takes an iterable input, applies `func` with given arguments,
+    """
+
+    def apply_adapted_op(input_iterable: Iterable[Any]) -> Generator[Any, None, None]:
+        """
+        Apply the adapted operation to the input iterable and yield results.
+        Args:
+            input_iterable (Iterable[Any]): Input iterable data to process.
+        Yields:
+            Processed items as per the adapted function's behavior.
+        """
+        if func is map:
+            yield from map(args[0], input_iterable)
+        elif func is filter:
+            yield from filter(args[0], input_iterable)
+        elif func is zip:
+            yield from zip(input_iterable, *args)
+        elif func is enumerate:
+            yield from enumerate(input_iterable, *args, **kwargs)
+        elif func is reduce:
+            if args:
+                reduction_func = args[0]
+            else:
+                reduction_func = func
+
+            if len(args) > 1:
+                initial = args[1]
+            else:
+                initial = kwargs.get("initializer", None)
+
+            if initial is not None:
+                result = reduce(reduction_func, input_iterable, initial)
+            else:
+                result = reduce(reduction_func, input_iterable)
+            yield result
+        else:
+            yield from func(input_iterable, *args, **kwargs)
+
+    return apply_adapted_op
+
+
+def pipeline(
+    source_data: Iterable[Any],
+    *operations: Callable[[Iterable[Any]], Generator[Any, None, None]]
+) -> Generator[Any, None, None]:
+    """
+    Apply a sequence of operations to the source data
+    Args:
+        source_data (Iterable[Any]): The initial data stream or iterable.
+        *operations (Callable): Functions that take an iterable and yield processed items.
+    Yields:
+        Any: Processed items after applying all operations in sequence.
     """
     stream = source_data
-    for op in operations:
-        if isinstance(op, tuple):
-            op_func, *op_args = op
-            stream = op_func(*op_args, stream)
-        elif callable(op):
-            stream = op(stream)
-        else:
-            raise TypeError(f"Unsupported operation type: {type(op)}")
-
+    for operation in operations:
+        stream = operation(stream)
     yield from stream
 
 
 def aggregator(source_data: Iterable[Any], output_type: Callable = list) -> Sequence:
-    """Collects all items from a data stream into a collection.
-
-    This function triggers the execution of a lazy pipeline by iterating over
-    the source data stream and storing the results in a specified collection type.
-
+    """
+    Aggregate all items from a source iterable into a collection of specified type
     Args:
-        source_data (Iterable[Any]): The data stream (typically the output of a
-            pipeline) to be consumed.
-        output_type (Callable, optional): The constructor for the desired output
-            collection. Defaults to list. Can be set, tuple, etc.
-
+        source_data (Iterable[Any]): Iterable data to aggregate.
+        output_type (Callable, optional): Constructor for collection type
     Returns:
-        Sequence: A collection (e.g., a list, tuple, set) containing all the
-            processed items from the source data stream.
+        Sequence: The aggregated collection
     """
     return output_type(source_data)
