@@ -182,3 +182,39 @@ def test_mixed_arguments():
     assert my_list == [100]
 
     assert EVALUATED_COUNTER == 2
+
+
+def test_curry_builtin_max():
+    curried_max = curry_explicit(max, 2)
+    assert curried_max(5)(10) == 10
+    assert curried_max(100)(20) == 100
+
+
+def test_curry_builtin_pow():
+    curried_pow = curry_explicit(pow, 2)
+    assert curried_pow(2)(3) == 8
+    assert curried_pow(5)(2) == 25
+
+
+def test_curry_builtin_divmod():
+    curried_divmod = curry_explicit(divmod, 2)
+    assert curried_divmod(10)(3) == (3, 1)
+    assert curried_divmod(17)(5) == (3, 2)
+
+
+def test_curry_multiple_args_first_stage():
+    curried_f = curry_explicit(f_sum, 3)
+    with pytest.raises(ValueError, match="only accepts 1 argument at a time"):
+        curried_f(1, 2)
+    with pytest.raises(ValueError, match="only accepts 1 argument at a time"):
+        curried_f(1, 2, 3)
+
+
+def test_curry_multiple_args_middle_stage():
+    curried_f = curry_explicit(f_sum, 3)
+    stage1 = curried_f(1)
+    with pytest.raises(ValueError, match="only accepts 1 argument at a time"):
+        stage1(2, 3)
+    stage2 = stage1(2)
+    result = stage2(3)
+    assert result == 6
