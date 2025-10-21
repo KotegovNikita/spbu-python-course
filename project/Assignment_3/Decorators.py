@@ -3,7 +3,7 @@ import inspect
 from typing import Callable, Any
 
 
-def curry_explicit(function, arity):
+def curry_explicit(function: Callable, arity: int) -> Callable:
     """
     Converts a function of multiple parameters into a chain of functions of one parameter.
     Args:
@@ -20,7 +20,7 @@ def curry_explicit(function, arity):
     if arity == 0:
         return lambda: function()
 
-    def curried(*args):
+    def curried(*args: Any) -> Any:
         if len(args) == 0:
             raise ValueError(f"Expected {arity} argument(s), got 0")
 
@@ -29,10 +29,12 @@ def curry_explicit(function, arity):
                 f"Curried function only accepts 1 argument at a time, got {len(args)}"
             )
 
-        collected = list(args)
+        collected: list[Any] = list(args)
 
-        def collector(arg):
-            collected.append(arg)
+        def collector(*next_args: Any) -> Any:
+            if len(next_args) != 1:
+                raise ValueError("Curried function only accepts 1 argument at a time")
+            collected.append(next_args[0])
 
             if len(collected) == arity:
                 return function(*collected)
@@ -51,7 +53,7 @@ def curry_explicit(function, arity):
     return curried
 
 
-def uncurry_explicit(function, arity):
+def uncurry_explicit(function: Callable, arity: int) -> Callable:
     """
     The inverse operation of curry_explicit: converts a curried function
     back into a function of multiple parameters.
@@ -67,14 +69,14 @@ def uncurry_explicit(function, arity):
     if arity < 0:
         raise ValueError("Arity cannot be negative")
 
-    def uncurried(*args):
+    def uncurried(*args: Any) -> Any:
         if len(args) != arity:
             raise ValueError(f"Expected {arity} argument(s), got {len(args)}")
 
         if arity == 0:
             return function()
 
-        result = function
+        result: Any = function
         for arg in args:
             result = result(arg)
 
@@ -93,7 +95,7 @@ class _EvaluatedWrapper:
             raise TypeError("Evaluated must be initialized with a callable (function)")
         self.func = func
 
-    def get_value(self):
+    def get_value(self) -> Any:
         """Computes and returns the value."""
         return self.func()
 
@@ -107,7 +109,7 @@ class _IsolatedWrapper:
         pass
 
 
-def Evaluated(func: Callable[[], Any]):
+def Evaluated(func: Callable[[], Any]) -> _EvaluatedWrapper:
     """
     A function to create a default value that is computed at call time.
     It takes a function with no arguments that returns a value.
@@ -121,7 +123,7 @@ def Evaluated(func: Callable[[], Any]):
     return _EvaluatedWrapper(func)
 
 
-def Isolated():
+def Isolated() -> _IsolatedWrapper:
     """
     A function to create a placeholder default value.
 
@@ -131,7 +133,7 @@ def Isolated():
     return _IsolatedWrapper()
 
 
-def smart_args(func):
+def smart_args(func: Callable) -> Callable:
     """
     A decorator that analyzes the default value types of a function's arguments and,
     depending on the type, copies and/or computes them before executing the function:
@@ -142,7 +144,7 @@ def smart_args(func):
     """
     sig = inspect.signature(func)
     for param_name, param in sig.parameters.items():
-        default = param.default
+        default: Any = param.default
 
         if isinstance(default, (_EvaluatedWrapper, _IsolatedWrapper)):
             if param.kind != inspect.Parameter.KEYWORD_ONLY:
@@ -150,7 +152,7 @@ def smart_args(func):
                     f"Parameter '{param_name}' with Evaluated/Isolated must be keyword-only "
                 )
 
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
         if args:
             for param_name, param in sig.parameters.items():
                 if isinstance(param.default, (_EvaluatedWrapper, _IsolatedWrapper)):
@@ -162,10 +164,10 @@ def smart_args(func):
         processed_kwargs = {}
 
         for param_name, param in sig.parameters.items():
-            default = param.default
+            default: Any = param.default
 
             if param_name in kwargs:
-                value = kwargs[param_name]
+                value: Any = kwargs[param_name]
 
                 if isinstance(default, _IsolatedWrapper):
                     processed_kwargs[param_name] = copy.deepcopy(value)
