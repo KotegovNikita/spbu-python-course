@@ -1,4 +1,3 @@
-# scoreboard.py
 from typing import List, Dict, Set
 from collections import Counter
 
@@ -73,9 +72,9 @@ class Scoreboard:
         Fills a category with a score calculated from the dice values.
 
         Args:
-            category : The name of the category to fill.
-            dice_values : A list of the dice values.
-            first_throw : True if the combination was achieved on the first roll.
+            category (str): The name of the category to fill.
+            dice_values (List[int]): A list of the dice values.
+            first_throw (bool): True if the combination was achieved on the first roll.
 
         Returns:
             int: The number of points scored.
@@ -96,9 +95,9 @@ class Scoreboard:
         Calculates the score for a given category without saving the result.
 
         Args:
-            category : The name of the category.
-            dice_values : A list of the dice values.
-            first_throw : True if the combination was achieved on the first roll.
+            category (str): The name of the category.
+            dice_values (List[int]): A list of the dice values.
+            first_throw (bool): True if the combination was achieved on the first roll.
 
         Returns:
             int: The potential score.
@@ -115,8 +114,8 @@ class Scoreboard:
         Calculates the score for the first stage categories.
 
         Args:
-            category : The name of the category ('ones', 'twos', etc.).
-            dice_values : A list of the dice values.
+            category (str): The name of the category ('ones', 'twos', etc.).
+            dice_values (List[int]): A list of the dice values.
 
         Returns:
             int: The score calculated by the formula (count - 3) * value.
@@ -141,9 +140,9 @@ class Scoreboard:
         Calculates the score for the second stage categories.
 
         Args:
-            category : The name of the combination.
-            dice_values : A list of the dice values.
-            first_throw : True if the combination was achieved on the first roll.
+            category (str): The name of the combination.
+            dice_values (List[int]): A list of the dice values.
+            first_throw (bool): True if the combination was achieved on the first roll.
 
         Returns:
             int: The score for the combination.
@@ -174,7 +173,7 @@ class Scoreboard:
                 score = total_sum
                 combination_met = True
         elif category == "small_straight":
-            unique_dice: Set[int] = set(dice_values)
+            unique_dice = set(dice_values)
             if any(
                 s.issubset(unique_dice)
                 for s in [{1, 2, 3, 4}, {2, 3, 4, 5}, {3, 4, 5, 6}]
@@ -182,8 +181,9 @@ class Scoreboard:
                 score = total_sum
                 combination_met = True
         elif category == "large_straight":
-            unique_dice: Set[int] = set(dice_values)
-            if unique_dice in [{1, 2, 3, 4, 5}, {2, 3, 4, 5, 6}]:
+            # Fixed: Removed re-definition with type hint to satisfy mypy
+            unique_dice_large = set(dice_values)
+            if unique_dice_large in [{1, 2, 3, 4, 5}, {2, 3, 4, 5, 6}]:
                 score = total_sum
                 combination_met = True
         elif category == "even":
