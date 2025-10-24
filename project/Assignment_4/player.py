@@ -1,4 +1,4 @@
-# player.py
+# project/Assignment_4/player.py
 import random
 from typing import List
 from collections import Counter
@@ -11,7 +11,7 @@ class Player:
         Initializes the player.
 
         Args:
-            name : The player's name.
+            name (str): The player's name.
         """
         self.name = name
         self.scoreboard = Scoreboard()
@@ -30,7 +30,7 @@ class Player:
         Analyzes the first roll and decides which category to play for this turn.
 
         Args:
-            dice_values : The dice values after the first roll.
+            dice_values (List[int]): The dice values after the first roll.
 
         Returns:
             str: The name of the target category.
@@ -44,35 +44,21 @@ class Player:
         Based on the turn's goal, decides which dice to reroll.
 
         Args:
-            dice_values : The current dice values.
-            goal_category : The target category for this turn.
+            dice_values (List[int]): The current dice values.
+            goal_category (str): The target category for this turn.
 
         Returns:
             List[int]: A list of dice indices to reroll.
         """
         raise NotImplementedError("This method should be implemented by a subclass.")
 
-    def __str__(self) -> str:
-        return f"{self.__class__.__name__}(name={self.name}, score={self.get_total_score()})"
-
-
-class AggressiveBot(Player):
-    def decide_turn_goal(self, dice_values: List[int]) -> str:
-        available = self.scoreboard.get_available_categories()
-        best_category = ""
-        max_potential_score = -100
-
-        for category in available:
-            potential_score = Scoreboard.score_for_category(category, dice_values)
-            if potential_score > max_potential_score:
-                max_potential_score = potential_score
-                best_category = category
-
-        return best_category if best_category else available[0]
-
-    def make_reroll_decision(
+    def _standard_reroll_logic(
         self, dice_values: List[int], goal_category: str
     ) -> List[int]:
+        """
+        Shared logic for standard rerolling based on a goal category.
+        Keeps dice that match the goal, rerolls others.
+        """
         counts = Counter(dice_values)
         target_map = {
             "ones": 1,
@@ -98,10 +84,35 @@ class AggressiveBot(Player):
         ]:
             if not dice_values:
                 return []
+            # Keep the most frequent die value
             target_value = counts.most_common(1)[0][0]
             return [i for i, v in enumerate(dice_values) if v != target_value]
 
         return []
+
+    def __str__(self) -> str:
+        """Returns the string representation of the player."""
+        return f"{self.__class__.__name__}(name={self.name}, score={self.get_total_score()})"
+
+
+class AggressiveBot(Player):
+    def decide_turn_goal(self, dice_values: List[int]) -> str:
+        available = self.scoreboard.get_available_categories()
+        best_category = ""
+        max_potential_score = -100
+
+        for category in available:
+            potential_score = Scoreboard.score_for_category(category, dice_values)
+            if potential_score > max_potential_score:
+                max_potential_score = potential_score
+                best_category = category
+
+        return best_category if best_category else available[0]
+
+    def make_reroll_decision(
+        self, dice_values: List[int], goal_category: str
+    ) -> List[int]:
+        return self._standard_reroll_logic(dice_values, goal_category)
 
 
 class CautiousBot(Player):
@@ -134,7 +145,7 @@ class CautiousBot(Player):
     def make_reroll_decision(
         self, dice_values: List[int], goal_category: str
     ) -> List[int]:
-        return AggressiveBot.make_reroll_decision(self, dice_values, goal_category)
+        return self._standard_reroll_logic(dice_values, goal_category)
 
 
 class RandomBot(Player):
