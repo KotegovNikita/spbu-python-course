@@ -1,231 +1,257 @@
-from typing import List, Dict, Set
+from typing import List, Dict
 from collections import Counter
+from enum import Enum
+
+
+class Category(Enum):
+    """All game categories"""
+
+    ONES = "ones"
+    TWOS = "twos"
+    THREES = "threes"
+    FOURS = "fours"
+    FIVES = "fives"
+    SIXES = "sixes"
+
+    PAIR = "pair"
+    TWO_PAIRS = "two_pairs"
+    THREE_OF_A_KIND = "three_of_a_kind"
+    FOUR_OF_A_KIND = "four_of_a_kind"
+    SMALL_STRAIGHT = "small_straight"
+    LARGE_STRAIGHT = "large_straight"
+    EVEN = "even"
+    ODD = "odd"
+    FULL_HOUSE = "full_house"
+    POKER = "poker"
+    CHANCE = "chance"
+
+
+class DiceValue(Enum):
+    """Dice face values"""
+
+    ONE = 1
+    TWO = 2
+    THREE = 3
+    FOUR = 4
+    FIVE = 5
+    SIX = 6
+
+
+class CombinationThreshold(Enum):
+    """Minimum dice counts required for combinations"""
+
+    PAIR = 2
+    THREE_OF_A_KIND = 3
+    FOUR_OF_A_KIND = 4
+    FULL_HOUSE_THREE = 3
+    FULL_HOUSE_TWO = 2
+    POKER = 5
+
+
+class Bonus(Enum):
+    """Bonus points and multipliers"""
+
+    STAGE_ONE_BONUS = 50
+    POKER_BONUS = 50
+    FIRST_THROW_MULTIPLIER = 2
+
+
+class SmallStraight(Enum):
+    """Small straights combinations"""
+
+    STRAIGHT_1 = frozenset({1, 2, 3, 4})
+    STRAIGHT_2 = frozenset({2, 3, 4, 5})
+    STRAIGHT_3 = frozenset({3, 4, 5, 6})
+
+
+class LargeStraight(Enum):
+    """Large straights combinations"""
+
+    STRAIGHT_1 = frozenset({1, 2, 3, 4, 5})
+    STRAIGHT_2 = frozenset({2, 3, 4, 5, 6})
 
 
 class Scoreboard:
-    stage_1_st = ["ones", "twos", "threes", "fours", "fives", "sixes"]
-    stage_2_nd = [
-        "pair",
-        "two_pairs",
-        "three_of_a_kind",
-        "four_of_a_kind",
-        "small_straight",
-        "large_straight",
-        "even",
-        "odd",
-        "full_house",
-        "poker",
-        "chance",
+    STAGE_1 = [
+        Category.ONES,
+        Category.TWOS,
+        Category.THREES,
+        Category.FOURS,
+        Category.FIVES,
+        Category.SIXES,
     ]
-    CATEGORIES = stage_1_st + stage_2_nd
+    STAGE_2 = [
+        Category.PAIR,
+        Category.TWO_PAIRS,
+        Category.THREE_OF_A_KIND,
+        Category.FOUR_OF_A_KIND,
+        Category.SMALL_STRAIGHT,
+        Category.LARGE_STRAIGHT,
+        Category.EVEN,
+        Category.ODD,
+        Category.FULL_HOUSE,
+        Category.POKER,
+        Category.CHANCE,
+    ]
+    CATEGORIES = STAGE_1 + STAGE_2
 
     def __init__(self):
-        self.scores: Dict[str, int | None] = {c: None for c in self.CATEGORIES}
+        self.scores: Dict[Category, int | None] = {c: None for c in self.CATEGORIES}
 
-    def get_available_categories(self) -> List[str]:
-        """
-        Returns a list of categories that have not yet been filled.
-
-        Returns:
-            List[str]: A list of names of available categories.
-        """
+    def get_available_categories(self) -> List[Category]:
+        """Returns list of unfilled categories"""
         return [c for c, v in self.scores.items() if v is None]
 
     def get_stage_one_subtotal(self) -> int:
-        """
-        Calculates the subtotal for the first stage (from 'ones' to 'sixes').
-
-        Returns:
-            int: The sum of scores for the first stage.
-        """
+        """Calculates the sum of stage one scores"""
         return sum(
-            v for c, v in self.scores.items() if c in self.stage_1_st and v is not None
+            v for c, v in self.scores.items() if c in self.STAGE_1 and v is not None
         )
 
     def is_complete(self) -> bool:
-        """
-        Checks if all categories on the scoreboard have been filled.
-
-        Returns:
-            bool: True if all categories are filled, otherwise False.
-        """
+        """Checks if all categories are filled"""
         return all(v is not None for v in self.scores.values())
 
     def get_total_score(self) -> int:
-        """
-        Calculates the final total score, including the bonus for the first stage.
-
-        Returns:
-            int: The total score.
-        """
+        """Calculates final score with bonus"""
         stage_one_total = self.get_stage_one_subtotal()
         stage_two_total = sum(
-            v for c, v in self.scores.items() if c in self.stage_2_nd and v is not None
+            v for c, v in self.scores.items() if c in self.STAGE_2 and v is not None
         )
-        bonus = 50 if stage_one_total >= 0 else 0
+        bonus = Bonus.STAGE_ONE_BONUS.value if stage_one_total >= 0 else 0
         return stage_one_total + stage_two_total + bonus
 
     def fill_category(
-        self, category: str, dice_values: List[int], first_throw: bool = False
+        self, category: Category, dice_values: List[int], first_throw: bool = False
     ) -> int:
-        """
-        Fills a category with a score calculated from the dice values.
-
-        Args:
-            category (str): The name of the category to fill.
-            dice_values (List[int]): A list of the dice values.
-            first_throw (bool): True if the combination was achieved on the first roll.
-
-        Returns:
-            int: The number of points scored.
-        """
+        """Fills a category and returns earned points"""
         if category not in self.CATEGORIES:
             raise ValueError(f"Unknown category: {category}")
         if self.scores[category] is not None:
-            raise ValueError(f"Category '{category}' is already filled")
+            raise ValueError(f"Category '{category.value}' is already filled")
+
         score = Scoreboard.score_for_category(category, dice_values, first_throw)
         self.scores[category] = score
         return score
 
     @staticmethod
     def score_for_category(
-        category: str, dice_values: List[int], first_throw: bool = False
+        category: Category, dice_values: List[int], first_throw: bool = False
     ) -> int:
-        """
-        Calculates the score for a given category without saving the result.
-
-        Args:
-            category (str): The name of the category.
-            dice_values (List[int]): A list of the dice values.
-            first_throw (bool): True if the combination was achieved on the first roll.
-
-        Returns:
-            int: The potential score.
-        """
-        if category in Scoreboard.stage_1_st:
+        """Calculates score for a category without saving"""
+        if category in Scoreboard.STAGE_1:
             return Scoreboard.score_stage_one(category, dice_values)
-        elif category in Scoreboard.stage_2_nd:
+        elif category in Scoreboard.STAGE_2:
             return Scoreboard.score_stage_two(category, dice_values, first_throw)
-        raise ValueError(f"Unknown category for scoring: {category}")
+        raise ValueError(f"Unknown category: {category}")
 
     @staticmethod
-    def score_stage_one(category: str, dice_values: List[int]) -> int:
-        """
-        Calculates the score for the first stage categories.
-
-        Args:
-            category (str): The name of the category ('ones', 'twos', etc.).
-            dice_values (List[int]): A list of the dice values.
-
-        Returns:
-            int: The score calculated by the formula (count - 3) * value.
-        """
+    def score_stage_one(category: Category, dice_values: List[int]) -> int:
+        """Calculates score for stage one"""
         counts = Counter(dice_values)
         target_map = {
-            "ones": 1,
-            "twos": 2,
-            "threes": 3,
-            "fours": 4,
-            "fives": 5,
-            "sixes": 6,
+            Category.ONES: DiceValue.ONE.value,
+            Category.TWOS: DiceValue.TWO.value,
+            Category.THREES: DiceValue.THREE.value,
+            Category.FOURS: DiceValue.FOUR.value,
+            Category.FIVES: DiceValue.FIVE.value,
+            Category.SIXES: DiceValue.SIX.value,
         }
         target_value = target_map[category]
-        return (counts.get(target_value, 0) - 3) * target_value
+        return (
+            counts.get(target_value, 0) - CombinationThreshold.THREE_OF_A_KIND.value
+        ) * target_value
 
     @staticmethod
     def score_stage_two(
-        category: str, dice_values: List[int], first_throw: bool = False
+        category: Category, dice_values: List[int], first_throw: bool = False
     ) -> int:
-        """
-        Calculates the score for the second stage categories.
-
-        Args:
-            category (str): The name of the combination.
-            dice_values (List[int]): A list of the dice values.
-            first_throw (bool): True if the combination was achieved on the first roll.
-
-        Returns:
-            int: The score for the combination.
-        """
+        """Calculates score for stage two"""
         counts = Counter(dice_values)
         total_sum = sum(dice_values)
         score = 0
         combination_met = False
 
-        if category == "pair":
-            if any(v >= 2 for v in counts.values()):
+        if category == Category.PAIR:
+            if any(v >= CombinationThreshold.PAIR.value for v in counts.values()):
                 score = total_sum
                 combination_met = True
-        elif category == "two_pairs":
+        elif category == Category.TWO_PAIRS:
             if (
-                list(counts.values()).count(2) >= 2
-                or 4 in counts.values()
-                or 5 in counts.values()
+                list(counts.values()).count(CombinationThreshold.PAIR.value)
+                >= CombinationThreshold.PAIR.value
+                or CombinationThreshold.FOUR_OF_A_KIND.value in counts.values()
+                or CombinationThreshold.POKER.value in counts.values()
             ):
                 score = total_sum
                 combination_met = True
-        elif category == "three_of_a_kind":
-            if any(v >= 3 for v in counts.values()):
-                score = total_sum
-                combination_met = True
-        elif category == "four_of_a_kind":
-            if any(v >= 4 for v in counts.values()):
-                score = total_sum
-                combination_met = True
-        elif category == "small_straight":
-            unique_dice = set(dice_values)
+        elif category == Category.THREE_OF_A_KIND:
             if any(
-                s.issubset(unique_dice)
-                for s in [{1, 2, 3, 4}, {2, 3, 4, 5}, {3, 4, 5, 6}]
+                v >= CombinationThreshold.THREE_OF_A_KIND.value for v in counts.values()
             ):
                 score = total_sum
                 combination_met = True
-        elif category == "large_straight":
-            # Fixed: Removed re-definition with type hint to satisfy mypy
-            unique_dice_large = set(dice_values)
-            if unique_dice_large in [{1, 2, 3, 4, 5}, {2, 3, 4, 5, 6}]:
+        elif category == Category.FOUR_OF_A_KIND:
+            if any(
+                v >= CombinationThreshold.FOUR_OF_A_KIND.value for v in counts.values()
+            ):
                 score = total_sum
                 combination_met = True
-        elif category == "even":
-            if all(d % 2 == 0 for d in dice_values):
+        elif category == Category.SMALL_STRAIGHT:
+            unique_dice = frozenset(dice_values)
+            if any(s.value.issubset(unique_dice) for s in SmallStraight):
                 score = total_sum
                 combination_met = True
-        elif category == "odd":
-            if all(d % 2 != 0 for d in dice_values):
+        elif category == Category.LARGE_STRAIGHT:
+            unique_dice = frozenset(dice_values)
+            if any(unique_dice == s.value for s in LargeStraight):
                 score = total_sum
                 combination_met = True
-        elif category == "full_house":
-            if 3 in counts.values() and 2 in counts.values():
+        elif category == Category.EVEN:
+            if all(d % CombinationThreshold.PAIR.value == 0 for d in dice_values):
                 score = total_sum
                 combination_met = True
-        elif category == "poker":
-            if 5 in counts.values():
-                score = total_sum + 50
+        elif category == Category.ODD:
+            if all(d % CombinationThreshold.PAIR.value != 0 for d in dice_values):
+                score = total_sum
                 combination_met = True
-        elif category == "chance":
+        elif category == Category.FULL_HOUSE:
+            if (
+                CombinationThreshold.FULL_HOUSE_THREE.value in counts.values()
+                and CombinationThreshold.FULL_HOUSE_TWO.value in counts.values()
+            ):
+                score = total_sum
+                combination_met = True
+        elif category == Category.POKER:
+            if CombinationThreshold.POKER.value in counts.values():
+                score = total_sum + Bonus.POKER_BONUS.value
+                combination_met = True
+        elif category == Category.CHANCE:
             score = total_sum
             combination_met = True
 
         if not combination_met:
             return 0
-        if first_throw and category != "chance":
-            if category == "poker":
-                return (total_sum * 2) + 50
-            return score * 2
+        if first_throw and category != Category.CHANCE:
+            if category == Category.POKER:
+                return (
+                    total_sum * Bonus.FIRST_THROW_MULTIPLIER.value
+                ) + Bonus.POKER_BONUS.value
+            return score * Bonus.FIRST_THROW_MULTIPLIER.value
         return score
 
     def __str__(self) -> str:
-        lines = ["--- STAGE 1 ---"]
-        for cat in self.stage_1_st:
+        lines = ["--- ЭТАП 1 ---"]
+        for cat in self.STAGE_1:
             val = self.scores[cat]
-            lines.append(f"{cat:16}: {val if val is not None else '-'}")
-        lines.append(f"SUBTOTAL (S1): {self.get_stage_one_subtotal()}")
+            lines.append(f"{cat.value:16}: {val if val is not None else '-'}")
+        lines.append(f"ИТОГО (Э1): {self.get_stage_one_subtotal()}")
         if self.get_stage_one_subtotal() >= 0:
-            lines.append("BONUS:           50")
-        lines.append("\n--- STAGE 2 ---")
-        for cat in self.stage_2_nd:
+            lines.append(f"БОНУС:           {Bonus.STAGE_ONE_BONUS.value}")
+        lines.append("\n--- ЭТАП 2 ---")
+        for cat in self.STAGE_2:
             val = self.scores[cat]
-            lines.append(f"{cat:16}: {val if val is not None else '-'}")
+            lines.append(f"{cat.value:16}: {val if val is not None else '-'}")
         lines.append("--------------------")
-        lines.append(f"TOTAL: {self.get_total_score()}")
+        lines.append(f"ИТОГО: {self.get_total_score()}")
         return "\n".join(lines)
