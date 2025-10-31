@@ -2,7 +2,7 @@
 from typing import List, Optional
 from .dice import Dice
 from .player import Player
-from .scoreboard import Scoreboard
+from .scoreboard import Scoreboard, Category
 
 
 class Turn:
@@ -58,7 +58,7 @@ class Turn:
         """
         return self.current_values.copy()
 
-    def finalize(self, category: str) -> int:
+    def finalize(self, category: Category) -> int:
         """
         Ends the turn by scoring the result in the specified category.
 
