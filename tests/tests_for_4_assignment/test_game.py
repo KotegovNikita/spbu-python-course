@@ -7,7 +7,6 @@ from project.Assignment_4.Game import GameState, YahtzeeGame
 def test_score_stage_one():
     """Tests the scoring logic for the upper section."""
     assert Scoreboard.score_stage_one(Category.THREES, [3, 3, 3, 3, 1]) == 3
-    # ИСПРАВЛЕНО: Правильный результат (2-3)*4 = -4
     assert Scoreboard.score_stage_one(Category.FOURS, [4, 4, 1, 2, 5]) == -4
     assert Scoreboard.score_stage_one(Category.SIXES, [6, 6, 6, 1, 2]) == 0
     assert Scoreboard.score_stage_one(Category.ONES, [2, 3, 4, 5, 6]) == -3
@@ -18,7 +17,6 @@ def test_score_stage_two():
     assert Scoreboard.score_stage_two(Category.POKER, [5, 5, 5, 5, 5]) == 5 * 5 + 50
     assert Scoreboard.score_stage_two(Category.FULL_HOUSE, [2, 2, 3, 3, 3]) == 13
     assert Scoreboard.score_stage_two(Category.LARGE_STRAIGHT, [1, 2, 3, 4, 5]) == 15
-    # ИСПРАВЛЕНО: Правильный результат - сумма всех костей (1+1+2+3+4 = 11)
     assert Scoreboard.score_stage_two(Category.PAIR, [1, 1, 2, 3, 4]) == 11
     assert Scoreboard.score_stage_two(Category.FOUR_OF_A_KIND, [1, 2, 3, 4, 5]) == 0
     assert Scoreboard.score_stage_two(Category.POKER, [1, 1, 1, 1, 2]) == 0
@@ -72,8 +70,6 @@ def test_game_over_condition():
     p1 = AggressiveBot("P1")
     state = GameState([p1])
     assert not state.is_game_over()
-
-    # ИСПРАВЛЕНО: Цикл теперь выполняется столько раз, сколько раундов в игре
     for _ in range(state.max_rounds):
         state.advance_turn()
 
