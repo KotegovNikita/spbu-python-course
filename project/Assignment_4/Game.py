@@ -1,4 +1,3 @@
-# game.py
 from typing import List, Optional
 from .dice import Dice
 from .player import Player
@@ -6,17 +5,19 @@ from .scoreboard import Scoreboard, Category
 
 
 class Turn:
-    def __init__(self, player: Player, num_dice: int = 5):
+    """Manages a single turn for a player in Yahtzee."""
+
+    def __init__(self, player: Player, num_dice: int = 5) -> None:
         """
         Initializes a turn for the specified player.
 
         Args:
-            player : The player taking the turn.
-            num_dice : The number of dice in the game.
+            player: The player taking the turn.
+            num_dice: The number of dice in the game.
         """
-        self.player = player
-        self.dice = [Dice() for _ in range(num_dice)]
-        self.roll_count = 0
+        self.player: Player = player
+        self.dice: List[Dice] = [Dice() for _ in range(num_dice)]
+        self.roll_count: int = 0
         self.current_values: List[int] = []
 
     def roll_dice(self, indices_to_roll: Optional[List[int]] = None) -> List[int]:
@@ -24,10 +25,11 @@ class Turn:
         Rolls the specified dice and updates their values.
 
         Args:
-            indices_to_roll : A list of dice indices to roll. If None, rolls all dice.
-
+            indices_to_roll: A list of dice indices to roll. If None, rolls all dice.
         Returns:
-            List[int]: The new list of all dice values.
+            The new list of all dice values.
+        Raises:
+            ValueError: If maximum rolls (3) have been exceeded.
         """
         if self.roll_count >= 3:
             raise ValueError("Max rolls exceeded")
@@ -45,7 +47,7 @@ class Turn:
         Checks if the player can make another roll this turn.
 
         Returns:
-            bool: True if the roll count is less than 3.
+            True if the roll count is less than 3.
         """
         return self.roll_count < 3
 
@@ -54,7 +56,7 @@ class Turn:
         Returns the current values of the dice.
 
         Returns:
-            List[int]: A copy of the list of dice values.
+            A copy of the list of dice values.
         """
         return self.current_values.copy()
 
@@ -63,10 +65,11 @@ class Turn:
         Ends the turn by scoring the result in the specified category.
 
         Args:
-            category : The name of the category to fill.
-
+            category: The name of the category to fill.
         Returns:
-            int: The number of points scored.
+            The number of points scored.
+        Raises:
+            ValueError: If no rolls have been made.
         """
         if self.roll_count == 0:
             raise ValueError("Must roll at least once")
@@ -77,23 +80,30 @@ class Turn:
 
 
 class GameState:
-    def __init__(self, players: List[Player]):
+    """Tracks the current state of the Yahtzee game."""
+
+    def __init__(self, players: List[Player]) -> None:
         """
         Initializes the game state.
 
         Args:
-            players : The list of players in the game.
+            players: The list of players in the game.
         """
-        self.players = players
-        self.max_rounds = len(Scoreboard.CATEGORIES)
-        self.current_round = 0
-        self.current_player_index = 0
+        self.players: List[Player] = players
+        self.max_rounds: int = len(Scoreboard.CATEGORIES)
+        self.current_round: int = 0
+        self.current_player_index: int = 0
 
     def get_current_player(self) -> Player:
-        """Returns the player whose turn it is."""
+        """
+        Returns the player whose turn it is.
+
+        Returns:
+            The current active player.
+        """
         return self.players[self.current_player_index]
 
-    def advance_turn(self):
+    def advance_turn(self) -> None:
         """Advances the turn to the next player and round if necessary."""
         self.current_player_index += 1
         if self.current_player_index >= len(self.players):
@@ -105,7 +115,7 @@ class GameState:
         Checks if the game has ended.
 
         Returns:
-            bool: True if the number of rounds played has reached the maximum.
+            True if the number of rounds played has reached the maximum.
         """
         return self.current_round >= self.max_rounds
 
@@ -127,18 +137,20 @@ class GameState:
 class YahtzeeGame:
     """Manages the overall game flow, players, and rounds."""
 
-    def __init__(self, players: List[Player], verbose: bool = True):
+    def __init__(self, players: List[Player], verbose: bool = True) -> None:
         """
         Initializes the Yahtzee game.
 
         Args:
-            players : A list of players participating in the game.
-            verbose : If True, prints the game log to the console.
+            players: A list of players participating in the game.
+            verbose: If True, prints the game log to the console.
+        Raises:
+            ValueError: If no players are provided.
         """
         if not players:
             raise ValueError("At least one player is required")
-        self.state = GameState(players)
-        self.verbose = verbose
+        self.state: GameState = GameState(players)
+        self.verbose: bool = verbose
         self.winner: Optional[Player] = None
 
     def get_game_state(self) -> GameState:
@@ -146,16 +158,16 @@ class YahtzeeGame:
         Returns the current state of the game.
 
         Returns:
-            GameState: The object holding the game's current state.
+            The object holding the game's current state.
         """
         return self.state
 
-    def play_turn(self, player: Player):
+    def play_turn(self, player: Player) -> None:
         """
         Conducts one full turn for a single player.
 
         Args:
-            player : The player taking the turn.
+            player: The player taking the turn.
         """
         turn = Turn(player)
         if self.verbose:
@@ -186,7 +198,8 @@ class YahtzeeGame:
             print(f"  -> Result scored in '{goal_category}'. Points: {points}")
             print(f"  -> Player's total score: {player.get_total_score()}")
 
-    def play_game(self):
+    def play_game(self) -> None:
+        """Plays a complete game of Yahtzee from start to finish."""
         if self.verbose:
             print("\n" + "=" * 50 + "\nYAHTZEE GAME START\n" + "=" * 50)
             print(f"Players: {', '.join(str(p) for p in self.state.players)}")
@@ -202,7 +215,7 @@ class YahtzeeGame:
         if self.verbose:
             self.print_final_results()
 
-    def _determine_winner(self):
+    def _determine_winner(self) -> None:
         """Determines the winner(s) at the end of the game."""
         if not self.state.players:
             return
@@ -210,7 +223,8 @@ class YahtzeeGame:
         winners = [p for p in self.state.players if p.get_total_score() == max_score]
         self.winner = winners[0] if len(winners) == 1 else None
 
-    def print_final_results(self):
+    def print_final_results(self) -> None:
+        """Prints the final game results and scoreboard."""
         print("\n" + "=" * 50 + "\nGAME OVER - FINAL RESULTS\n" + "=" * 50)
         leaderboard = sorted(
             self.state.players, key=lambda p: p.get_total_score(), reverse=True
