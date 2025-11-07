@@ -6,7 +6,7 @@ from project.Assignment_4.Game import Turn, GameState, YahtzeeGame
 
 
 class TestDice:
-    def test_dice_roll_changes_value(self):
+    def test_dice_changes(self):
         dice = Dice()
         original = dice.value
         for _ in range(10):
@@ -17,32 +17,32 @@ class TestDice:
 
 
 class TestScoreboard:
-    def test_fill_category_changes_state(self):
+    def test_fill_category(self):
         sb = Scoreboard()
         initial = len(sb.get_available_categories())
         sb.fill_category(Category.ONES, [1, 1, 1, 2, 3])
         assert len(sb.get_available_categories()) == initial - 1
 
-    def test_cannot_fill_twice(self):
+    def test_cannot_twice(self):
         sb = Scoreboard()
         sb.fill_category(Category.ONES, [1, 1, 1, 2, 3])
         with pytest.raises(ValueError):
             sb.fill_category(Category.ONES, [1, 1, 1, 1, 1])
 
-    def test_poker_bonus(self):
+    def test_bonus(self):
         sb = Scoreboard()
         score = sb.fill_category(Category.POKER, [6, 6, 6, 6, 6])
-        assert score == 80  # 30 + 50 bonus
+        assert score == 80
 
 
 class TestTurn:
-    def test_roll_count_increments(self):
+    def test_roll_count(self):
         player = AggressiveBot("Bot")
         turn = Turn(player)
         turn.roll_dice()
         assert turn.roll_count == 1
 
-    def test_max_three_rolls(self):
+    def test_three_rolls(self):
         player = AggressiveBot("Bot")
         turn = Turn(player)
         turn.roll_dice()
@@ -53,14 +53,14 @@ class TestTurn:
 
 
 class TestGameState:
-    def test_advance_turn_switches_player(self):
+    def test_advance_player(self):
         players = [AggressiveBot("Bot1"), CautiousBot("Bot2")]
         state = GameState(players)
         assert state.get_current_player().name == "Bot1"
         state.advance_turn()
         assert state.get_current_player().name == "Bot2"
 
-    def test_round_increments_after_all_players(self):
+    def test_round(self):
         players = [AggressiveBot("Bot1"), CautiousBot("Bot2")]
         state = GameState(players)
         state.advance_turn()
@@ -69,7 +69,7 @@ class TestGameState:
 
 
 class TestYahtzeeGame:
-    def test_full_game_completes(self):
+    def test_full_game(self):
         players = [AggressiveBot("Bot1"), CautiousBot("Bot2")]
         game = YahtzeeGame(players, verbose=False)
         game.play_game()
