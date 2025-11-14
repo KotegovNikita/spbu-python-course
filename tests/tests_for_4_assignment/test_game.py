@@ -9,7 +9,7 @@ class TestDice:
     def test_dice_changes(self):
         dice = Dice()
         original = dice.value
-        for _ in range(10):
+        for i in range(10):
             dice.roll()
             if dice.value != original:
                 break
